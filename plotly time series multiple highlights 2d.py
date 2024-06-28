@@ -1,52 +1,38 @@
-import pandas as pd
-import plotly.express as px
+# app.py
 import dash
-from dash import dcc, html, Input, Output, dash_table
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Input, Output
+import plotly.express as px
 
-# Create some sample data
-data = {
-    "Date": pd.date_range(start="2021-01-01", periods=100),
-    "Value": pd.np.random.randn(100).cumsum()
-}
-df = pd.DataFrame(data)
-
-# Initialize the Dash app (no external stylesheets for simplicity)
-app = dash.Dash(__name__)
+# Initialize the Dash app and specify the external CSS stylesheet from Dash Bootstrap Components
+app = dash.Dash(__name__, external_stylesheets=['https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css'])
+server = app.server  # This is important for deployment on Gunicorn
 
 # Define the layout of the app
 app.layout = html.Div([
-    html.H1("Simple Dash App"),
-    dcc.Graph(id='my-graph'),
-    dash_table.DataTable(
-        id='my-table',
-        columns=[{"name": i, "id": i} for i in df.columns],
-        data=df.to_dict('records'),
-        style_cell={'textAlign': 'left'},
-        style_header={
-            'backgroundColor': 'white',
-            'fontWeight': 'bold'
-        }
-    ),
+    html.H1("Simple Dash App", className="text-center bg-primary text-white p-3"),
+    dcc.Graph(id='graph'),
     dcc.Slider(
         id='year-slider',
-        min=df['Date'].dt.year.min(),
-        max=df['Date'].dt.year.max(),
-        value=df['Date'].dt.year.max(),
-        marks={str(year): str(year) for year in df['Date'].dt.year.unique()},
-        step=None
+        min=2010,
+        max=2020,
+        value=2015,
+        marks={str(year): str(year) for year in range(2010, 2021)},
+        step=1
     )
 ])
 
-# Define callback to update graph dynamically based on the slider's value
+# Define callback to update graph
 @app.callback(
-    Output('my-graph', 'figure'),
+    Output('graph', 'figure'),
     [Input('year-slider', 'value')]
 )
-def update_graph(selected_year):
-    filtered_df = df[df['Date'].dt.year == selected_year]
-    fig = px.line(filtered_df, x='Date', y='Value', title=f'Stock Prices in {selected_year}')
+def update_figure(selected_year):
+    # Generate a simple plot based on the slider value
+    data = [dict(Year=year, Value=year*2) for year in range(2010, selected_year+1)]
+    fig = px.line(data, x='Year', y='Value', title=f'Data up to the year {selected_year}')
     return fig
 
-# Run the server
 if __name__ == '__main__':
     app.run_server(debug=True)
